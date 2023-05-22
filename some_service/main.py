@@ -1,11 +1,15 @@
 """Some Service's main module containing FastAPI app instance."""
 
-import pydantic
+import logging
 import sys
 
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 
 from .routers import root_router, functional_router
+from .async_log import init_logger, log_queue, configure_logger
+from .exceptions import validation_exception_handler
+
 
 description = """
 Some Service API provides a sample of python FastAPI functionality in its
@@ -29,8 +33,18 @@ description and add additional data to the OpenAPI's generated docs:
 
 """.format(sys.platform, *sys.version_info[:3])
 
-app = FastAPI(title="Some Service", description=description)
+async def initialize():
+    await init_logger(log_queue, address="http://127.0.0.1:8001/")
 
+
+app = FastAPI(title="Some Service", description=description)
+app.add_event_handler("startup", initialize)
 
 app.include_router(root_router)
 app.include_router(functional_router, prefix="/api")
+
+app.add_exception_handler(404, validation_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+configure_logger(logging.getLogger("uvicorn.error"), queue=log_queue, stream=False)
+configure_logger(logging.getLogger("uvicorn.access"), queue=log_queue, stream=False)

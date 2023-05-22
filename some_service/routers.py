@@ -1,9 +1,12 @@
 import os
+import logging
 
 from fastapi import APIRouter, HTTPException
 from http import HTTPStatus
 
 from .models import Response, DataResponse
+
+from .async_log import task_id
 
 root_router = APIRouter(tags=["root"])
 
@@ -36,10 +39,6 @@ async def get_some_data():
     global api_call_count
     api_call_count += 1
 
-    environment_variable = os.getenv("MESSAGE_VALUE")
+    logging.info(f"API call ({api_call_count}) {await task_id()}")
 
-    if environment_variable is None:
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                            detail="MESSAGE_VALUE envirionment variable not set")
-
-    return DataResponse(message=environment_variable, data=api_call_count)
+    return DataResponse(message="test", data=api_call_count)
