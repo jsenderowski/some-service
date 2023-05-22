@@ -146,8 +146,9 @@ class LogSenderThread(threading.Thread):
         while self._loop.is_running():
             try:
                 if self._log_queue.qsize() != 0:
-                    self._loop.create_task(
-                        self.publish(self._log_queue.get_nowait())
+                    asyncio.run_coroutine_threadsafe(
+                        self.publish(self._log_queue.get_nowait()),
+                        loop=self._loop
                     )
             except Empty:
                 pass
